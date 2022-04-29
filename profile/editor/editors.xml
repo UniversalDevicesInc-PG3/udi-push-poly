@@ -6,4 +6,7 @@
     <editor id="action">
         <range uom="25" subset="0-25" nls="ACTION" />
     </editor>
+    <editor id="status">
+        <range uom="25" subset="0,1,2" nls="STATUS" />
+    </editor>
 </editors>

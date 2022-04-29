@@ -36,3 +36,7 @@ ACTION-22 = EMERGENCY
 ACTION-23 = Heat warning
 ACTION-24 = Cold warning
 ACTION-25 = Reset
+
+STATUS-0 = Disconnected
+STATUS-1 = Connected
+STATUS-2 = Failed

@@ -4,13 +4,11 @@
     <nodeDef id="controller" nls="ctl">
         <editors />
         <sts>
-			<st id="ST" editor="bool" />
+			<st id="ST" editor="status" />
 		</sts>
         <cmds>
             <sends />
             <accepts>
-              <cmd id="REMOVE_NOTICES_ALL" />
-              <cmd id="UPDATE_PROFILE" />
             </accepts>
         </cmds>
     </nodeDef>

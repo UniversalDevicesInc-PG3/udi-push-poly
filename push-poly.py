@@ -1,9 +1,6 @@
 #!/usr/bin/env python3
 
-try:
-    import polyinterface
-except ImportError:
-    import pgc_interface as polyinterface
+import udi_interface
 import sys
 import time
 import subprocess
@@ -11,7 +8,7 @@ import http.client
 import urllib
 import requests
 
-LOGGER = polyinterface.LOGGER
+LOGGER = udi_interface.LOGGER
           
 ACTION = ['-',
 	  'On',
@@ -41,99 +38,85 @@ ACTION = ['-',
 	  'Reset'
          ] 
 
-class Controller(polyinterface.Controller):
-    def __init__(self, polyglot):
-        super(Controller, self).__init__(polyglot)
-        self.name = 'Push'
+class Controller(udi_interface.Node):
+    def __init__(self, polyglot, primary, address, name):
+        super(Controller, self).__init__(polyglot, primary, address, name)
+        self.poly = polyglot
+        self.name = name
         self.api_key = 'none'
         self.user_key = 'none'
         self.d_read = False
+
+        polyglot.subscribe(polyglot.START, self.start, address)
+        polyglot.subscribe(polyglot.CUSTOMPARAMS, self.parameterHandler)
+
+        polyglot.ready()
+        polyglot.addNode(self, conn_status = "ST")
         
     def start(self):
-        self.removeNoticesAll()
-        LOGGER.info('Started Push Nodeserver')
-        self.check_params()
-        self.setDriver('ST', 1)
-        LOGGER.info('If you have just upgraded hit the Update Profile button and restart the Admin Console')
+        LOGGER.info('Started Push Node Server')
+        self.poly.updateProfile()
+        self.poly.setCustomParamsDoc()
         
-    def shortPoll(self):
-        pass
-
-    def longPoll(self):
-        pass
-
     def query(self):
-        for node in self.nodes:
-            self.nodes[node].reportDrivers()
+        self.reportDrivers()
 
-    def discover(self, *args, **kwargs):
-        pass
-    
     def delete(self):
-        LOGGER.info('Deleting the Push Nodeserver.')
+        LOGGER.info('Deleting the Push Node Server.')
 
     def stop(self):
-        LOGGER.debug('NodeServer stopped.')
+        LOGGER.debug('Node Server stopped.')
 
-    def check_params(self):  # check for the keys and leave a message if they are not here.
-        if 'api_key' in self.polyConfig['customParams']:
-            self.api_key = self.polyConfig['customParams']['api_key']               
-        if 'user_key' in self.polyConfig['customParams']:
-            self.user_key = self.polyConfig['customParams']['user_key']
-        if 'disclaimer_read' in self.polyConfig['customParams']:
-            self.d_read = self.polyConfig['customParams']['disclaimer_read']
+    def parameterHandler(self, params):
+        valid = True
+
+        if 'api_key' in params and params['api_key'] != '':
+            self.api_key = params['api_key']               
+        else:
+            self.poly.Notices['api'] = 'Please enter your Pushover API token'
+            valid = False
+
+        if 'user_key' in params and params['user_key'] != '':
+            self.user_key = params['user_key']               
+        else:
+            self.poly.Notices['user'] = 'Please enter your Pushover user key'
+            valid = False
+
+        if 'disclaimer_read' in params and params['disclaimer_read'] != '':
+            self.d_read = params['disclaimer_read']
         
-        _params = self.polyConfig['customParams']
-        for key, val in _params.items():
+        for key, val in params:
             _key = key.lower()
             if _key == 'api_key' or _key == 'user_key' or _key == 'disclaimer_read': # should parse out the keys, all others will be node
-                pass
+                continue
             else:
-                _val = key.lower()
+                _val = val.lower()
                 _cleanaddress = _val.replace(' ','')
                 _address = (_cleanaddress[:12] + _cleanaddress[-2:])
                 _key = key
-                self.addNode(thingnode(self, self.address, _address, _key))
+                if not self.poly.getNode(_address):
+                    self.poly.addNode(thingnode(self.poly, self.address, _address, _key))
 		
-        if self.api_key == 'none':
-            self.addNotice('No api key, please enter your key.')                                                
-        if self.user_key == 'none':
-            self.addNotice('No user key, please enter your key.')
         if not self.d_read:
-            self.addNotice('Please read the Disclaimer <a target="_blank" href="https://github.com/markv58/UDI-Push/blob/master/Disclaimer.md">here</a> to remove this notice.')
+            self.poly.Notices['dis'] = 'Please read the Disclaimer <a target="_blank" href="https://github.com/UniversalDevicesInc-PG3/udi-push-poly/blob/master/Disclaimer.md">here</a> to remove this notice.'
 
-    def remove_notices_all(self,command):
-        LOGGER.info('remove_notices_all:')
-        # Remove all existing notices
-        self.removeNoticesAll()
-
-    def update_profile(self,command):
-        LOGGER.info('update_profile:')
-        st = self.poly.installprofile()
-        return st
 
     id = 'controller'
     commands = {
-        'UPDATE_PROFILE': update_profile,
-        'REMOVE_NOTICES_ALL': remove_notices_all
     }
 
-    drivers = [{'driver': 'ST', 'value': 0, 'uom': 2}]
+    drivers = [{'driver': 'ST', 'value': 0, 'uom': 25}]
 
 
     
-class thingnode(polyinterface.Node):
+class thingnode(udi_interface.Node):
 
-    def __init__(self, controller, primary, address, name):
-        super(thingnode, self).__init__(controller, primary, address, name)
+    def __init__(self, polyglot, primary, address, name):
+        super(thingnode, self).__init__(polyglot, primary, address, name)
         self.title = str(name)
+        self.poly = polyglot
+        self.parent = polyglot.getNode(primary)
         
-    def start(self):
-        pass
-
-    def query(self):
-        pass
-    
     def send_pushover(self, command = None):
         _message = int(command.get('value'))
         try:
@@ -160,9 +143,9 @@ class thingnode(polyinterface.Node):
     
 if __name__ == "__main__":
     try:
-        polyglot = polyinterface.Interface('Push NodeServer')
-        polyglot.start()
-        control = Controller(polyglot)
-        control.runForever()
+        polyglot = udi_interface.Interface([])
+        polyglot.start('2.0.0')
+        Controller(polyglot, 'controller', 'controller', 'Push')
+        polyglot.runForever()
     except (KeyboardInterrupt, SystemExit):
         sys.exit(0)
