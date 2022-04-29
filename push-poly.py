@@ -85,12 +85,12 @@ class Controller(udi_interface.Node):
         if 'disclaimer_read' in params and params['disclaimer_read'] != '':
             self.d_read = params['disclaimer_read']
         
-        for key, val in params:
+        for key in params:
             _key = key.lower()
             if _key == 'api_key' or _key == 'user_key' or _key == 'disclaimer_read': # should parse out the keys, all others will be node
                 continue
             else:
-                _val = val.lower()
+                _val = params[key].lower()
                 _cleanaddress = _val.replace(' ','')
                 _address = (_cleanaddress[:12] + _cleanaddress[-2:])
                 _key = key
@@ -144,7 +144,7 @@ class thingnode(udi_interface.Node):
 if __name__ == "__main__":
     try:
         polyglot = udi_interface.Interface([])
-        polyglot.start('2.0.0')
+        polyglot.start('2.0.1')
         Controller(polyglot, 'controller', 'controller', 'Push')
         polyglot.runForever()
     except (KeyboardInterrupt, SystemExit):
