@@ -1,6 +1,6 @@
 {
     "name": "Push",
-    "docs": "https://github.com/UniversalDevicesInc-PG3/udi-push-poly/blob/mater/README.md",
+    "docs": "https://github.com/UniversalDevicesInc-PG3/udi-push-poly/blob/master/README.md",
     "type": "python3",
     "executable": "push-poly.py",
     "install": "install.sh",
