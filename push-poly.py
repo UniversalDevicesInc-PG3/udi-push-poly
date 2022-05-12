@@ -90,7 +90,8 @@ class Controller(udi_interface.Node):
             if _key == 'api_key' or _key == 'user_key' or _key == 'disclaimer_read': # should parse out the keys, all others will be node
                 continue
             else:
-                _val = params[key].lower()
+                # address comes from the key.  The value is unused.
+                _val = _key
                 _cleanaddress = _val.replace(' ','')
                 _address = (_cleanaddress[:12] + _cleanaddress[-2:])
                 _key = key
@@ -144,7 +145,7 @@ class thingnode(udi_interface.Node):
 if __name__ == "__main__":
     try:
         polyglot = udi_interface.Interface([])
-        polyglot.start('2.0.1')
+        polyglot.start('2.0.2')
         Controller(polyglot, 'controller', 'controller', 'Push')
         polyglot.runForever()
     except (KeyboardInterrupt, SystemExit):
